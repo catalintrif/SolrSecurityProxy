@@ -3,6 +3,7 @@ package ro.itexpert;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -15,6 +16,9 @@ import java.io.IOException;
 @RestController()
 public class SolrController {
 
+    public static final String SOLR_URL = "http://localhost:8983/solr/";
+    public static final String USER_NAME = "solr";
+    public static final String PASSWORD = "solr123";
     public static final String PROFILES_FIELD = "security";
 
     @RequestMapping("/search")
@@ -23,14 +27,17 @@ public class SolrController {
             @RequestParam("q") String query,
             @RequestParam("user") String user)
             throws IOException, SolrServerException {
-        String urlString = "http://localhost:8983/solr/" + core;
+        String urlString = SOLR_URL + core;
         HttpSolrClient solr = new HttpSolrClient.Builder(urlString).build();
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.set("q", query + securityQuery(user));
+        QueryRequest req = new QueryRequest(solrQuery);
+        req.setBasicAuthCredentials(USER_NAME, PASSWORD);
+        QueryResponse response = req.process(solr);
 
-        QueryResponse response = solr.query(solrQuery);
         SolrDocumentList docList = response.getResults();
         for (SolrDocument doc : docList) {
+            // hide some fields
             doc.removeFields(PROFILES_FIELD);
         }
         return docList;

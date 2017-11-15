@@ -7,7 +7,7 @@
 Example:
 > java -jar target\SolrProxy-0.1.jar
 
-To ron or debug from the IDE:
+To run or debug from the IDE:
 > mvn spring-boot:run
 
 ### Testing
