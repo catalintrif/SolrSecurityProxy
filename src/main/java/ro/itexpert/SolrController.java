@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.Arrays.asList;
 
 @RestController()
 public class SolrController {
@@ -44,23 +48,27 @@ public class SolrController {
     }
 
     private String securityQuery(String user) {
-        String security = " AND " + PROFILES_FIELD + ":(";
-        String[] profiles = getUserProfiles(user);
-        for (int i = 0; i < profiles.length-1; i++) {
-            security += profiles[i] + " OR ";
-        }
-        security += profiles[profiles.length-1] + ")";
+        List profiles = getUserProfiles(user);
+        String security = " AND " + PROFILES_FIELD + ":("
+                + profiles.stream().collect(Collectors.joining(" OR "))
+                + ")";
         return security;
     }
 
 
-    private String[] getUserProfiles(String user) {
+    private List<String> getUserProfiles(String user) {
         // TODO replace this test implementation
-        if (user.equals("maria")) {
-            return new String[]{ "client2role1"};
-        } else if (user.equals("vasile")) {
-            return new String[]{"client1role1", "client2role1"};
+        List<User> users = asList(new User("maria", asList("client2role1")),
+                new User("vasile", asList("client1role1", "client2role1")));
+
+        List<List<String>> userFound = users.stream()
+                .filter(u -> u.userName.equals(user))
+                .map(u -> u.profiles)
+                .collect(Collectors.toList());
+        if (userFound.size() == 0) {
+            throw new RuntimeException("User not found");
+        } else {
+            return userFound.get(0);
         }
-        throw new RuntimeException("User not found");
     }
 }

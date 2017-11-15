@@ -13,4 +13,4 @@ To run or debug from the IDE:
 ### Testing
 By default the service will be running on port 8080.
 
-Example: [http://localhost:8080/search?q=name:Ana&user=maria]()
+Example: [http://localhost:8080/search?core=poc&q=name:Ana&user=maria]()
