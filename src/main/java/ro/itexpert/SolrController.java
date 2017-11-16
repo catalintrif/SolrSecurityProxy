@@ -35,8 +35,12 @@ public class SolrController {
     public SolrDocumentList search(
             @RequestParam(name="core", defaultValue = "gettingstarted") String core,
             @RequestParam("q") String query,
-            @RequestParam("user") String user)
+            @RequestParam("user") String userName)
             throws IOException, SolrServerException {
+        User user = getUser(userName);
+        if (user.getCredits() == 0) {
+            throw new RuntimeException("No more credits");
+        }
         String urlString = SOLR_URL + core;
         HttpSolrClient solr = new HttpSolrClient.Builder(urlString).build();
         SolrQuery solrQuery = new SolrQuery();
@@ -50,22 +54,24 @@ public class SolrController {
             // hide some fields
             doc.removeFields(PROFILES_FIELD);
         }
+        user.spendCredit();
+        users.persistUsersAsync();
+        System.out.println("Returning search results");
         return docList;
     }
 
-    private String securityQuery(String user) {
-        List profiles = getUserProfiles(user);
-        String security = " AND " + PROFILES_FIELD + ":("
+    private String securityQuery(User user) {
+        List profiles = user.getProfiles();
+        String securityString = " AND " + PROFILES_FIELD + ":("
                 + profiles.parallelStream().collect(Collectors.joining(" OR "))
                 + ")";
-        return security;
+        return securityString;
     }
 
 
-    private List<String> getUserProfiles(String user) {
-        List<List<String>> userFound = users.getUsers().stream().parallel()
-                .filter(u -> u.userName.equals(user))
-                .map(u -> u.profiles)
+    private User getUser(String user) {
+        List<User> userFound = users.getUsers().stream().parallel()
+                .filter(u -> u.getUserName().equals(user))
                 .collect(Collectors.toList());
         if (userFound.size() == 0) {
             throw new RuntimeException("User not found");
