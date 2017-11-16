@@ -7,6 +7,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,15 +17,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static java.util.Arrays.asList;
-
 @RestController()
 public class SolrController {
 
-    public static final String SOLR_URL = "http://localhost:8983/solr/";
-    public static final String USER_NAME = "solr";
-    public static final String PASSWORD = "solr123";
-    public static final String PROFILES_FIELD = "security";
+    @Value("${solr.url}")
+    private String SOLR_URL;
+    @Value("${solr.users.user}")
+    private String USER_NAME;
+    @Value("${solr.password}")
+    private String PASSWORD;
+    private String PROFILES_FIELD = "security";
+
+    @Autowired
+    private UserList users;
 
     @RequestMapping("/search")
     public SolrDocumentList search(
@@ -50,18 +56,14 @@ public class SolrController {
     private String securityQuery(String user) {
         List profiles = getUserProfiles(user);
         String security = " AND " + PROFILES_FIELD + ":("
-                + profiles.stream().collect(Collectors.joining(" OR "))
+                + profiles.parallelStream().collect(Collectors.joining(" OR "))
                 + ")";
         return security;
     }
 
 
     private List<String> getUserProfiles(String user) {
-        // TODO replace this test implementation
-        List<User> users = asList(new User("maria", asList("client2role1")),
-                new User("vasile", asList("client1role1", "client2role1")));
-
-        List<List<String>> userFound = users.stream()
+        List<List<String>> userFound = users.getUsers().stream().parallel()
                 .filter(u -> u.userName.equals(user))
                 .map(u -> u.profiles)
                 .collect(Collectors.toList());
@@ -70,5 +72,10 @@ public class SolrController {
         } else {
             return userFound.get(0);
         }
+    }
+
+    @RequestMapping("/reload")
+    public String reloadUsers() throws IOException, SolrServerException {
+        return "Users loaded: " + users.loadUsers();
     }
 }
