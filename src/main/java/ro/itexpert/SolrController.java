@@ -50,12 +50,10 @@ public class SolrController {
         QueryResponse response = req.process(solr);
 
         SolrDocumentList docList = response.getResults();
-        for (SolrDocument doc : docList) {
-            // hide some fields
-            doc.removeFields(PROFILES_FIELD);
-        }
+        // hide some fields
+        docList.forEach(doc -> doc.removeFields(PROFILES_FIELD));
         user.spendCredit();
-        users.persistUsersAsync();
+        users.persistAsync();
         System.out.println("Returning search results");
         return docList;
     }
@@ -63,21 +61,17 @@ public class SolrController {
     private String securityQuery(User user) {
         List profiles = user.getProfiles();
         String securityString = " AND " + PROFILES_FIELD + ":("
-                + profiles.parallelStream().collect(Collectors.joining(" OR "))
+                + profiles.stream().collect(Collectors.joining(" OR "))
                 + ")";
         return securityString;
     }
 
 
     private User getUser(String user) {
-        List<User> userFound = users.getUsers().stream().parallel()
+        return users.getUsers().stream().parallel()
                 .filter(u -> u.getUserName().equals(user))
-                .collect(Collectors.toList());
-        if (userFound.size() == 0) {
-            throw new RuntimeException("User not found");
-        } else {
-            return userFound.get(0);
-        }
+                .findAny()
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     @RequestMapping("/reload")

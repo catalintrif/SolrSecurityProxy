@@ -6,7 +6,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +20,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+/**
+ * In-memory user list cache with dirty flag checking and periodic write back.
+ */
 @Component
 public class UserList {
 
@@ -33,6 +35,8 @@ public class UserList {
 
     private List<User> users;
     private HttpSolrClient solr;
+    // The timestamp when the previous persistence operation was completed
+    private long lastSaveTimestamp = System.currentTimeMillis();
 
     public UserList() {}
 
@@ -43,6 +47,12 @@ public class UserList {
 
     }
 
+    /**
+     * Runs at startup and on demand via the <code>/reload</code> API
+     * @return
+     * @throws IOException
+     * @throws SolrServerException
+     */
     public int loadUsers() throws IOException, SolrServerException {
         System.out.println("Loading users...");
         SolrQuery solrQuery = new SolrQuery();
@@ -50,7 +60,6 @@ public class UserList {
         QueryRequest req = new QueryRequest(solrQuery);
         req.setBasicAuthCredentials(USER_NAME, PASSWORD);
         QueryResponse response = req.process(solr);
-
         SolrDocumentList docList = response.getResults();
         users = docList.stream().parallel()
                 .filter(doc -> doc.containsKey("credits"))
@@ -72,37 +81,47 @@ public class UserList {
     /**
      * Uses a different thread to persist the <code>credits</code> field of users that are flagged as dirty.
      */
-    public void persistUsersAsync() {
+    public void persistAsync() {
+        if (System.currentTimeMillis() - lastSaveTimestamp < 1000) {
+            return; // previous run was less than 1 second ago
+        }
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             System.out.print("Updating users asynchronously...");
             try {
                 Long affected = users.stream()
                         .filter(user -> user.isDirty())
-                        .map(user -> {
-                            // create the document
-                            SolrInputDocument sdoc = new SolrInputDocument();
-                            sdoc.addField("id", user.getId());
-                            Map<String, Object> fieldModifier = new HashMap<>(1);
-                            fieldModifier.put("set", user.getCredits());
-                            sdoc.addField("credits", fieldModifier);  // add the map as the field value
-                            UpdateRequest req = new UpdateRequest();  // create request
-                            req.add(sdoc);
-                            req.setBasicAuthCredentials(USER_NAME, PASSWORD);
-                            try {
-                                req.process(solr);  // send it to the solr server
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            user.setDirty(false);
-                            return user;
-                        })
-                        .collect(Collectors.counting());
+                        .map(this::updateSolrUser)
+                        .count();
                 solr.commit();
-                System.out.println(affected.toString() + " users updated");
+                lastSaveTimestamp = System.currentTimeMillis();
+                System.out.printf(" %d user(s) updated \n", affected);
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         });
+    }
+
+    /**
+     * Updates the user's <code>credits</code> in Solr and removes the dirty flag.
+     * @param user
+     * @return
+     */
+    private User updateSolrUser(User user) {
+        SolrInputDocument doc = new SolrInputDocument(); // create the Solr document
+        doc.addField("id", user.getId());
+        Map<String, Object> fieldModifier = new HashMap<>(1);
+        fieldModifier.put("set", user.getCredits());
+        doc.addField("credits", fieldModifier);  // add the map as the field value
+        UpdateRequest req = new UpdateRequest();  // create request
+        req.add(doc);
+        req.setBasicAuthCredentials(USER_NAME, PASSWORD);
+        try {
+            req.process(solr);  // send it to the solr server
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        user.setDirty(false);
+        return user;
     }
 }

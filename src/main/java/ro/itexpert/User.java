@@ -3,17 +3,19 @@ package ro.itexpert;
 import java.util.List;
 
 public class User {
+
+    private String id;
+    private String userName;
+    private List<String> profiles;
+    private Long credits;
+    private boolean dirty = false;
+
     public User(String id, String userName, List<String> profile, Long credits) {
         this.id= id;
         this.userName = userName;
         this.profiles = profile;
         this.credits = credits;
     }
-    private String id;
-    private String userName;
-    private List<String> profiles;
-    private Long credits;
-    private boolean dirty = false;
 
     public String getUserName() {
         return userName;

@@ -30,7 +30,8 @@ The user objects in Solr should be defined as:
 }
 ```
 For each successful search, the "credits" field of the user is decremented.
-To improve Solr update performance by taking advantage of in-place updates, the "credits" field should be defined as:
+
+To improve Solr update performance by taking advantage of [in-place updates](https://lucene.apache.org/solr/guide/6_6/updating-parts-of-documents.html), the "credits" field should be defined as:
 ```
 <field name="credits" type="float" indexed="false" stored="false" docValues="true"/>
 ```  
