@@ -49,4 +49,6 @@ To run or debug from the IDE:
 ### Testing
 By default the service will be running on port 8080.
 
-Example: [http://localhost:8080/search?core=poc&q=name:Ana&user=maria]()
+Example URL: [http://localhost:8080/search?core=poc&q=name:Ana&user=maria]()
+
+To enable basic authentication for the proxy service, change the setting to ```  auth.required=true ``` and set the credentials.
