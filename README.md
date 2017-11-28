@@ -9,6 +9,17 @@ solr.user = solr
 solr.password = solr123
 ```
 The documents must have the "security" field defined, which is holding the allowed user roles.
+```
+{
+        "id": "10",
+        "name": [
+          "maria"
+        ],
+        "security": [
+          "client1role1"
+        ]
+}
+```
 Any core can be used by passing the "core" parameter to the /search REST API. 
 
 #### User profiles source
@@ -41,7 +52,7 @@ To improve Solr update performance by taking advantage of [in-place updates](htt
 
 ### Running
 Example:
-> java -jar target\SolrProxy-0.1.jar
+> java -jar SolrProxy-0.1.jar
 
 To run or debug from the IDE:
 > mvn spring-boot:run
@@ -49,6 +60,6 @@ To run or debug from the IDE:
 ### Testing
 By default the service will be running on port 8080.
 
-Example URL: [http://localhost:8080/search?core=poc&q=name:Ana&user=maria]()
+Example URL: [http://localhost:8080/search?core=poc&q=name:*&user=ion]()
 
 To enable basic authentication for the proxy service, change the setting to ```  auth.required=true ``` and set the credentials.

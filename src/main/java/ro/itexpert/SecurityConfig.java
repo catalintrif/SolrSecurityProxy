@@ -25,7 +25,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             http.authorizeRequests()
                     .antMatchers("/search").hasRole("USER")
                     .and()
-                    .httpBasic();
+                .httpBasic();
         }
     }
 

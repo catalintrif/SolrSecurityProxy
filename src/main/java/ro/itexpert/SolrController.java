@@ -27,6 +27,8 @@ public class SolrController {
     @Value("${solr.password}")
     private String PASSWORD;
     private String PROFILES_FIELD = "security";
+    @Value("${solr.max.results}")
+    private int MAX_RESULTS;
 
     @Autowired
     private UserList users;
@@ -45,6 +47,7 @@ public class SolrController {
         HttpSolrClient solr = new HttpSolrClient.Builder(urlString).build();
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.set("q", query + securityQuery(user));
+        solrQuery.set("rows", MAX_RESULTS);
         QueryRequest req = new QueryRequest(solrQuery);
         req.setBasicAuthCredentials(USER_NAME, PASSWORD);
         QueryResponse response = req.process(solr);
@@ -52,7 +55,7 @@ public class SolrController {
         SolrDocumentList docList = response.getResults();
         // hide some fields
         docList.forEach(doc -> doc.removeFields(PROFILES_FIELD));
-        user.spendCredit();
+        user.spendCredit(docList.size());
         users.persistAsync();
         System.out.println("Returning search results");
         return docList;

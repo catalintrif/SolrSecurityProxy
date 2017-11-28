@@ -57,8 +57,10 @@ public class User {
         this.dirty = dirty;
     }
 
-    public void spendCredit() {
-        credits--;
-        dirty = true;
+    public void spendCredit(int amount) {
+        if (amount > 0) {
+            credits -= amount;
+            dirty = true;
+        }
     }
 }

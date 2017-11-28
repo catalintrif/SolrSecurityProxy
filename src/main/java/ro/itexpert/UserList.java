@@ -6,6 +6,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,7 +94,6 @@ public class UserList {
                         .filter(user -> user.isDirty())
                         .map(this::updateSolrUser)
                         .count();
-                solr.commit();
                 lastSaveTimestamp = System.currentTimeMillis();
                 System.out.printf(" %d user(s) updated \n", affected);
             } catch (Exception e) {
@@ -117,7 +117,8 @@ public class UserList {
         req.add(doc);
         req.setBasicAuthCredentials(USER_NAME, PASSWORD);
         try {
-            req.process(solr);  // send it to the solr server
+            UpdateResponse response = req.process(solr);  // send it to the solr server
+            System.out.println(response);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
