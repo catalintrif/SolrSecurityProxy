@@ -114,7 +114,7 @@ public class UserList {
         fieldModifier.put("set", user.getCredits());
         doc.addField("credits", fieldModifier);  // add the map as the field value
         UpdateRequest req = new UpdateRequest();  // create request
-        req.add(doc);
+        req.add(doc, 2000);
         req.setBasicAuthCredentials(USER_NAME, PASSWORD);
         try {
             UpdateResponse response = req.process(solr);  // send it to the solr server
