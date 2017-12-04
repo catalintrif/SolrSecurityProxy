@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -82,6 +83,7 @@ public class UserList {
     /**
      * Uses a different thread to persist the <code>credits</code> field of users that are flagged as dirty.
      */
+    @PreDestroy
     public void persistAsync() {
         if (System.currentTimeMillis() - lastSaveTimestamp < 1000) {
             return; // previous run was less than 1 second ago
