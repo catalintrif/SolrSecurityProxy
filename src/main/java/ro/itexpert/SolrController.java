@@ -78,7 +78,9 @@ public class SolrController {
     }
 
     @RequestMapping("/reload")
-    public String reloadUsers() throws IOException, SolrServerException {
+    public String reloadUsers() throws IOException, SolrServerException, InterruptedException {
+        users.persistAsync();
+        Thread.sleep(3000);
         return "Users loaded: " + users.loadUsers();
     }
 }
