@@ -40,7 +40,7 @@ The user objects in Solr should be defined as:
         "credits": 50
 }
 ```
-For each successful search, the "credits" field of the user is decremented.
+For each successful search, the "credits" field of the user is decremented with the number of results.
 
 To improve Solr update performance by taking advantage of [in-place updates](https://lucene.apache.org/solr/guide/6_6/updating-parts-of-documents.html), the "credits" field should be defined as:
 ```
@@ -63,6 +63,9 @@ By default the service will be running on port 8080.
 Example URL: [http://localhost:8080/search?core=docs&q=name:*&user=ion]()
 
 To enable basic authentication for the proxy service, change the setting to ```  auth.required=true ``` and set the credentials.
+
+After modifying the number of credits for a user in Solr, a reload of the service is mandatory:
+[localhost:9000/reload]()
 
 #### Docker test environment
 Setup test Solr instance on port 8983 and create 2 cores:
